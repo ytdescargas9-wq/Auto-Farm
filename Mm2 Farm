@@ -1,6 +1,8 @@
 --[[ 
-    MM2 GOD HUB ULTRA (Delta Mobile - Versión Monedas Fix)
-    Funciones: Auto-Farm (Touch Interest Fix), NoClip, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
+    MM2 GOD HUB ULTRA v3.6
+    - Pantalla de Carga Mediana (Estilo Menú Central de MM2)
+    - Fling Automático al Murderer al Morir (On Death)
+    - Auto-Farm (Touch Interest Fix), NoClip, Invisibilidad, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
 ]]--
 
 local Players = game:GetService("Players")
@@ -13,14 +15,14 @@ local Camera = Workspace.CurrentCamera
 -- Variables de Estado
 local autoFarmActive = false
 local noClipActive = false
+local invisibleActive = false
 local espActive = false
 local autoLockActive = false
 local autoShootActive = false
 
-local undergroundOffset = Vector3.new(0, -2.5, 0) -- Ajustado para mejor contacto
-local farmDelay = 0.2
+local farmDelay = 0.25
 
--- 1. PANTALLA DE CARGA COMPLETA
+-- 1. PANTALLA DE CARGA MEDIANA (Ajustada según imagen)
 local LoadingGui = Instance.new("ScreenGui")
 local LoadBackground = Instance.new("Frame")
 local LoadTitle = Instance.new("TextLabel")
@@ -29,39 +31,42 @@ local LoadBarBackground = Instance.new("Frame")
 local LoadBar = Instance.new("Frame")
 local LoadPercentage = Instance.new("TextLabel")
 
-LoadingGui.Name = "MM2LoadingGuiFullScreen"
+LoadingGui.Name = "MM2LoadingGuiMedium"
 LoadingGui.Parent = PlayerGui
 LoadingGui.ResetOnSpawn = false
 
+-- Tamaño proporcional idéntico al cuadro central de la imagen
 LoadBackground.Name = "Background"
 LoadBackground.Parent = LoadingGui
-LoadBackground.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-LoadBackground.Size = UDim2.new(1, 0, 1, 0)
-LoadBackground.Position = UDim2.new(0, 0, 0, 0)
+LoadBackground.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+LoadBackground.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadBackground.Size = UDim2.new(0, 520, 0, 310)
 LoadBackground.ZIndex = 10
+Instance.new("UICorner", LoadBackground).CornerRadius = UDim.new(0, 10)
 
 LoadTitle.Parent = LoadBackground
 LoadTitle.BackgroundTransparency = 1
-LoadTitle.Position = UDim2.new(0, 0, 0.35, 0)
+LoadTitle.Position = UDim2.new(0, 0, 0.2, 0)
 LoadTitle.Size = UDim2.new(1, 0, 0, 40)
 LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.Text = "MM2 GOD HUB v3.1"
+LoadTitle.Text = "MM2 GOD HUB v3.6"
 LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadTitle.TextSize = 24
+LoadTitle.TextSize = 22
 
 LoadSubTitle.Parent = LoadBackground
 LoadSubTitle.BackgroundTransparency = 1
-LoadSubTitle.Position = UDim2.new(0, 0, 0.42, 0)
+LoadSubTitle.Position = UDim2.new(0, 0, 0.35, 0)
 LoadSubTitle.Size = UDim2.new(1, 0, 0, 20)
 LoadSubTitle.Font = Enum.Font.Gotham
-LoadSubTitle.Text = "Cargando Módulos: Farm Fix, ESP, Auto-Lock & Auto-Shoot..."
+LoadSubTitle.Text = "Cargando Módulos, Fling On-Death & Farm..."
 LoadSubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
 LoadSubTitle.TextSize = 13
 
 LoadBarBackground.Parent = LoadBackground
-LoadBarBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-LoadBarBackground.Position = UDim2.new(0.15, 0, 0.52, 0)
-LoadBarBackground.Size = UDim2.new(0.7, 0, 0, 16)
+LoadBarBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+LoadBarBackground.Position = UDim2.new(0.1, 0, 0.55, 0)
+LoadBarBackground.Size = UDim2.new(0.8, 0, 0, 20)
 Instance.new("UICorner", LoadBarBackground)
 
 LoadBar.Parent = LoadBarBackground
@@ -71,13 +76,14 @@ Instance.new("UICorner", LoadBar)
 
 LoadPercentage.Parent = LoadBackground
 LoadPercentage.BackgroundTransparency = 1
-LoadPercentage.Position = UDim2.new(0, 0, 0.58, 0)
-LoadPercentage.Size = UDim2.new(1, 0, 0, 20)
+LoadPercentage.Position = UDim2.new(0, 0, 0.65, 0)
+LoadPercentage.Size = UDim2.new(1, 0, 0, 25)
 LoadPercentage.Font = Enum.Font.GothamBold
 LoadPercentage.Text = "0%"
 LoadPercentage.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadPercentage.TextSize = 14
 
+-- Temporizador de carga (10 segundos)
 local startTime = tick()
 local duration = 10
 
@@ -159,7 +165,7 @@ MainGui.ResetOnSpawn = false
 MainFrame.Parent = MainGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
-MainFrame.Size = UDim2.new(0, 220, 0, 260)
+MainFrame.Size = UDim2.new(0, 220, 0, 340)
 MainFrame.Active = true
 MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame)
@@ -176,7 +182,7 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 
 MinimizeBtn.Parent = MainFrame
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-MinimizeBtn.Position = UDim2.new(0.8, 0, 0.04, 0)
+MinimizeBtn.Position = UDim2.new(0.8, 0, 0.025, 0)
 MinimizeBtn.Size = UDim2.new(0, 30, 0, 25)
 MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.Text = "-"
@@ -189,7 +195,7 @@ local function createButton(name, pos, callback)
     btn.Parent = MainFrame
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     btn.Position = pos
-    btn.Size = UDim2.new(0.9, 0, 0, 38)
+    btn.Size = UDim2.new(0.9, 0, 0, 34)
     btn.Font = Enum.Font.GothamBold
     btn.Text = name .. ": OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -211,20 +217,28 @@ local function createButton(name, pos, callback)
     return btn
 end
 
-createButton("Auto-Farm + NoClip", UDim2.new(0.05, 0, 0.16, 0), function(st)
+-- Botones del Panel
+createButton("Auto-Farm Monedas", UDim2.new(0.05, 0, 0.12, 0), function(st)
     autoFarmActive = st
+end)
+
+createButton("NoClip", UDim2.new(0.05, 0, 0.24, 0), function(st)
     noClipActive = st
 end)
 
-createButton("ESP Jugadores", UDim2.new(0.05, 0, 0.32, 0), function(st)
+createButton("Invisibilidad", UDim2.new(0.05, 0, 0.36, 0), function(st)
+    invisibleActive = st
+end)
+
+createButton("ESP Jugadores", UDim2.new(0.05, 0, 0.48, 0), function(st)
     espActive = st
 end)
 
-createButton("Auto-Lock Murderer", UDim2.new(0.05, 0, 0.48, 0), function(st)
+createButton("Auto-Lock Murderer", UDim2.new(0.05, 0, 0.60, 0), function(st)
     autoLockActive = st
 end)
 
-createButton("Auto-Shoot Murderer", UDim2.new(0.05, 0, 0.64, 0), function(st)
+createButton("Auto-Shoot Murderer", UDim2.new(0.05, 0, 0.72, 0), function(st)
     autoShootActive = st
 end)
 
@@ -252,9 +266,49 @@ OpenBtn.MouseButton1Click:Connect(function()
     OpenBtn.Visible = false
 end)
 
--- 4. NOCLIP
+-- 4. DETECTOR DE MUERTE -> FLING AL MURDERER (ON DEATH)
+local function setupFlingOnDeath(character)
+    if not character then return end
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    
+    if humanoid then
+        humanoid.Died:Connect(function()
+            pcall(function()
+                local murderRoot = nil
+                for _, plr in pairs(Players:GetPlayers()) do
+                    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        if plr.Backpack:FindFirstChild("Knife") or plr.Character:FindFirstChild("Knife") then
+                            murderRoot = plr.Character.HumanoidRootPart
+                            break
+                        end
+                    end
+                end
+
+                local myRoot = character:FindFirstChild("HumanoidRootPart")
+                if murderRoot and myRoot then
+                    local bodyVel = Instance.new("BodyVelocity")
+                    bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                    bodyVel.Velocity = Vector3.new(99999, 99999, 99999)
+                    bodyVel.Parent = myRoot
+
+                    local startFling = tick()
+                    while tick() - startFling < 0.8 do
+                        myRoot.CFrame = murderRoot.CFrame
+                        task.wait()
+                    end
+                    bodyVel:Destroy()
+                end
+            end)
+        end)
+    end
+end
+
+if LocalPlayer.Character then setupFlingOnDeath(LocalPlayer.Character) end
+LocalPlayer.CharacterAdded:Connect(setupFlingOnDeath)
+
+-- 5. NOCLIP
 RunService.Stepped:Connect(function()
-    if noClipActive then
+    if noClipActive or autoFarmActive then
         local character = LocalPlayer.Character
         if character then
             for _, part in pairs(character:GetDescendants()) do
@@ -266,7 +320,28 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- 5. ESP
+-- 6. INVISIBILIDAD
+task.spawn(function()
+    while true do
+        if invisibleActive then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") or part:IsA("Decal") then
+                            if part.Name ~= "HumanoidRootPart" then
+                                part.Transparency = 1
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.2)
+    end
+end)
+
+-- 7. ESP CON ROLES POR COLOR
 task.spawn(function()
     while true do
         if espActive then
@@ -303,7 +378,7 @@ task.spawn(function()
     end
 end)
 
--- 6. OBTENER MURDERER
+-- 8. OBTENER MURDERER
 local function getMurderer()
     for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -315,7 +390,7 @@ local function getMurderer()
     return nil
 end
 
--- 7. AUTO-LOCK & AUTO-SHOOT
+-- 9. AUTO-LOCK & AUTO-SHOOT
 RunService.RenderStepped:Connect(function()
     if autoLockActive then
         local murderRoot = getMurderer()
@@ -345,15 +420,19 @@ task.spawn(function()
     end
 end)
 
--- 8. AUTO-FARM CORREGIDO (TOUCH INTEREST FIX)
+-- 10. AUTO-FARM CORREGIDO
 local function getCoins()
     local coins = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if (obj.Name == "Coin" or obj.Name == "CoinContainer" or obj.Name == "CoinVisual") then
-            if obj:IsA("BasePart") then
+        if obj.Name == "CoinServer" or obj.Name == "CoinContainer" or obj.Name == "Coin" or obj.Name == "CoinVisual" then
+            if obj:IsA("BasePart") and obj.Transparency < 1 then
                 table.insert(coins, obj)
-            elseif obj:FindFirstChildWhichIsA("BasePart") then
-                table.insert(coins, obj:FindFirstChildWhichIsA("BasePart"))
+            elseif obj:IsA("Model") or obj:IsA("Folder") then
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("BasePart") and child.Transparency < 1 then
+                        table.insert(coins, child)
+                    end
+                end
             end
         end
     end
@@ -373,15 +452,13 @@ task.spawn(function()
                         if not autoFarmActive then break end
                         local coin = coins[i]
                         if coin and coin.Parent then
-                            -- Teletransporta al personaje muy cerca de la moneda
                             rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                            rootPart.CFrame = coin.CFrame + undergroundOffset
+                            rootPart.CFrame = coin.CFrame
                             
-                            -- Forzar evento de toque (Touch Interest) compatible con ejecutores
                             pcall(function()
                                 if firetouchinterest then
                                     firetouchinterest(rootPart, coin, 0)
-                                    task.wait(0.05)
+                                    task.wait(0.02)
                                     firetouchinterest(rootPart, coin, 1)
                                 end
                             end)
