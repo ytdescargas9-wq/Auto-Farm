@@ -1,7 +1,7 @@
 --[[ 
-    MM2 GOD HUB ULTRA v3.9 (Sistema Maniquí Falso Anti-Kick)
-    - Auto-Farm con Clon Falso (Tu cuerpo real agarra monedas mientras el maniquí se queda visible)
-    - Pantalla de Carga Mediana (10 Segundos - Tamaño Tienda MM2)
+    MM2 GOD HUB ULTRA v3.9 (Sistema Auto-Farm Directo a Monedas)
+    - Auto-Farm mediante teletransporte progresivo/suave de moneda en moneda
+    - Pantalla de Carga Mediana (10 Segundos)
     - Fling Automático al Murderer al Morir (On-Death)
     - NoClip Independiente, Invisibilidad, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
 ]]--
@@ -22,8 +22,7 @@ local espActive = false
 local autoLockActive = false
 local autoShootActive = false
 
-local farmSpeed = 12 -- Velocidad reducida para un movimiento más lento y seguro
-local undergroundOffset = Vector3.new(0, -2.5, 0)
+local farmSpeed = 15 -- Velocidad de desplazamiento entre monedas
 local fakeCharacter = nil
 
 -- 1. PANTALLA DE CARGA MEDIANA VISIBLE (10 SEGUNDOS)
@@ -66,7 +65,7 @@ LoadSubTitle.BackgroundTransparency = 1
 LoadSubTitle.Position = UDim2.new(0, 0, 0.35, 0)
 LoadSubTitle.Size = UDim2.new(1, 0, 0, 20)
 LoadSubTitle.Font = Enum.Font.Gotham
-LoadSubTitle.Text = "Iniciando Sistema de Maniquí Falso Anti-Kick..."
+LoadSubTitle.Text = "Iniciando Sistema de Auto-Farm Directo..."
 LoadSubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
 LoadSubTitle.TextSize = 13
 LoadSubTitle.ZIndex = 101
@@ -430,22 +429,7 @@ task.spawn(function()
     end
 end)
 
--- 10. AUTO-FARM CON MANIQUÍ FALSO (FAKE BODY METHOD)
-local function createFakeBody(char)
-    if fakeCharacter then fakeCharacter:Destroy() end
-    char.Archivable = true
-    fakeCharacter = char:Clone()
-    fakeCharacter.Name = "FakeMannequin"
-    fakeCharacter.Parent = Workspace
-    
-    for _, part in pairs(fakeCharacter:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Anchored = true
-            part.CanCollide = false
-        end
-    end
-end
-
+-- 10. AUTO-FARM DIRECTO A LAS MONEDAS
 local function getCoins()
     local coins = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -470,13 +454,8 @@ task.spawn(function()
             local character = LocalPlayer.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local rootPart = character.HumanoidRootPart
-                
-                -- Crear el maniquí falso en tu posición inicial
-                if not fakeCharacter then
-                    createFakeBody(character)
-                end
-
                 local coins = getCoins()
+                
                 if #coins > 0 then
                     for i = 1, #coins do
                         if not autoFarmActive then break end
@@ -484,10 +463,10 @@ task.spawn(function()
                         if coin and coin.Parent then
                             rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                             
-                            -- Desplazamiento más lento y seguro bajo el mapa
-                            local targetCFrame = coin.CFrame + undergroundOffset
+                            -- Movimiento directo a la moneda
+                            local targetCFrame = coin.CFrame
                             local distance = (rootPart.Position - targetCFrame.Position).Magnitude
-                            local travelTime = math.clamp(distance / farmSpeed, 0.2, 0.8)
+                            local travelTime = math.clamp(distance / farmSpeed, 0.1, 0.5)
                             
                             local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
                             local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
@@ -497,22 +476,16 @@ task.spawn(function()
                             pcall(function()
                                 if firetouchinterest then
                                     firetouchinterest(rootPart, coin, 0)
-                                    task.wait(0.05)
+                                    task.wait(0.02)
                                     firetouchinterest(rootPart, coin, 1)
                                 end
                             end)
-                            task.wait(0.1)
+                            task.wait(0.05)
                         end
                     end
                 end
             end
-        else
-            -- Eliminar maniquí cuando se apaga el farm
-            if fakeCharacter then
-                fakeCharacter:Destroy()
-                fakeCharacter = nil
-            end
         end
-        task.wait(0.5)
+        task.wait(0.3)
     end
 end)
