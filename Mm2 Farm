@@ -1,6 +1,6 @@
 --[[ 
     MM2 GOD HUB ULTRA v3.9 (Sistema Maniquí Falso Anti-Kick + Límites Seguros)
-    - Auto-Farm con Clon Falso, restricciones de distancia/mapa y carga de 50s
+    - Auto-Farm con Clon Falso y restricciones de distancia/mapa
 ]]--
 
 local Players = game:GetService("Players")
@@ -25,7 +25,7 @@ local maxFarmDistance = 150 -- Distancia máxima permitida desde el punto de ini
 local fakeCharacter = nil
 local startPosition = nil
 
--- 1. PANTALLA DE CARGA (50 SEGUNDOS)
+-- 1. PANTALLA DE CARGA MEDIANA VISIBLE (60 SEGUNDOS / 1 MINUTO)
 local LoadingGui = Instance.new("ScreenGui")
 local LoadBackground = Instance.new("Frame")
 local LoadTitle = Instance.new("TextLabel")
@@ -93,8 +93,7 @@ LoadPercentage.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadPercentage.TextSize = 15
 LoadPercentage.ZIndex = 101
 
--- Duración de la pantalla de carga cambiada a 50 segundos
-local duration = 50
+local duration = 60 -- Cambiado a 60 segundos (1 minuto)
 local startTime = tick()
 
 while (tick() - startTime) < duration do
@@ -357,3 +356,177 @@ end)
 -- 7. ESP CON ROLES POR COLOR
 task.spawn(function()
     while true do
+        if espActive then
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character then
+                    local char = plr.Character
+                    local highlight = char:FindFirstChild("ESPHighlight")
+                    if not highlight then
+                        highlight = Instance.new("Highlight")
+                        highlight.Name = "ESPHighlight"
+                        highlight.Parent = char
+                    end
+                    
+                    local hasKnife = plr.Backpack:FindFirstChild("Knife") or char:FindFirstChild("Knife")
+                    local hasGun = plr.Backpack:FindFirstChild("Gun") or char:FindFirstChild("Gun")
+                    
+                    if hasKnife then
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- ROJO: Murderer
+                    elseif hasGun then
+                        highlight.FillColor = Color3.fromRGB(0, 100, 255) -- AZUL: Sheriff
+                    else
+                        highlight.FillColor = Color3.fromRGB(0, 255, 0) -- VERDE: Inocente
+                    end
+                end
+            end
+        else
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr.Character and plr.Character:FindFirstChild("ESPHighlight") then
+                    plr.Character.ESPHighlight:Destroy()
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- 8. OBTENER MURDERER
+local function getMurderer()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            if plr.Backpack:FindFirstChild("Knife") or plr.Character:FindFirstChild("Knife") then
+                return plr.Character.HumanoidRootPart
+            end
+        end
+    end
+    return nil
+end
+
+-- 9. AUTO-LOCK & AUTO-SHOOT
+RunService.RenderStepped:Connect(function()
+    if autoLockActive then
+        local murderRoot = getMurderer()
+        if murderRoot then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, murderRoot.Position)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if autoShootActive then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local gun = char and (char:FindFirstChild("Gun") or LocalPlayer.Backpack:FindFirstChild("Gun"))
+                local murderRoot = getMurderer()
+                
+                if gun and murderRoot then
+                    if gun.Parent == LocalPlayer.Backpack then
+                        gun.Parent = char
+                    end
+                    gun:Activate()
+                end
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- 10. AUTO-FARM CON MANIQUÍ FALSO Y RESTRICCIÓN DE DISTANCIA/MAPA
+local function createFakeBody(char)
+    if fakeCharacter then fakeCharacter:Destroy() end
+    char.Archivable = true
+    fakeCharacter = char:Clone()
+    fakeCharacter.Name = "FakeMannequin"
+    fakeCharacter.Parent = Workspace
+    
+    for _, part in pairs(fakeCharacter:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = true
+            part.CanCollide = false
+        end
+    end
+end
+
+local function getCoins()
+    local coins = {}
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name == "CoinServer" or obj.Name == "CoinContainer" or obj.Name == "Coin" or obj.Name == "CoinVisual" then
+            if obj:IsA("BasePart") and obj.Transparency < 1 then
+                table.insert(coins, obj)
+            elseif obj:IsA("Model") or obj:IsA("Folder") then
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("BasePart") and child.Transparency < 1 then
+                        table.insert(coins, child)
+                    end
+                end
+            end
+        end
+    end
+    return coins
+end
+
+task.spawn(function()
+    while true do
+        if autoFarmActive then
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = character.HumanoidRootPart
+                
+                if not startPosition then
+                    startPosition = rootPart.Position
+                end
+
+                if not fakeCharacter then
+                    createFakeBody(character)
+                end
+
+                local coins = getCoins()
+                if #coins > 0 then
+                    for i = 1, #coins do
+                        if not autoFarmActive then break end
+                        local coin = coins[i]
+                        if coin and coin.Parent then
+                            -- RESTRICCIÓN: Validar que la moneda no esté demasiado lejos del punto de inicio (fuera del mapa)
+                            local distFromStart = (coin.Position - startPosition).Magnitude
+                            if distFromStart <= maxFarmDistance then
+                                rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                
+                                local targetCFrameUnder = coin.CFrame + undergroundOffset
+                                local distance = (rootPart.Position - targetCFrameUnder.Position).Magnitude
+                                local travelTime = math.clamp(distance / farmSpeed, 0.2, 0.8)
+                                
+                                local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
+                                local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrameUnder})
+                                tween:Play()
+                                tween.Completed:Wait()
+
+                                pcall(function()
+                                    if firetouchinterest then
+                                        firetouchinterest(rootPart, coin, 0)
+                                        task.wait(0.05)
+                                        firetouchinterest(rootPart, coin, 1)
+                                    end
+                                end)
+
+                                local targetCFrameSurface = coin.CFrame
+                                local upTween = TweenService:Create(rootPart, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {CFrame = targetCFrameSurface})
+                                upTween:Play()
+                                upTween.Completed:Wait()
+
+                                task.wait(0.1)
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            if fakeCharacter then
+                fakeCharacter:Destroy()
+                fakeCharacter = nil
+            end
+            startPosition = nil
+        end
+        task.wait(0.5)
+    end
+end)
