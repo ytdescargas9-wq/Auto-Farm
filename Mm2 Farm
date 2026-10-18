@@ -22,7 +22,7 @@ local espActive = false
 local autoLockActive = false
 local autoShootActive = false
 
-local farmSpeed = 30
+local farmSpeed = 12 -- Velocidad reducida para un movimiento más lento y seguro
 local undergroundOffset = Vector3.new(0, -2.5, 0)
 local fakeCharacter = nil
 
@@ -484,10 +484,10 @@ task.spawn(function()
                         if coin and coin.Parent then
                             rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                             
-                            -- Desplazamiento del cuerpo real bajo el mapa
+                            -- Desplazamiento más lento y seguro bajo el mapa
                             local targetCFrame = coin.CFrame + undergroundOffset
                             local distance = (rootPart.Position - targetCFrame.Position).Magnitude
-                            local travelTime = math.clamp(distance / farmSpeed, 0.05, 0.35)
+                            local travelTime = math.clamp(distance / farmSpeed, 0.2, 0.8)
                             
                             local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
                             local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
@@ -497,11 +497,11 @@ task.spawn(function()
                             pcall(function()
                                 if firetouchinterest then
                                     firetouchinterest(rootPart, coin, 0)
-                                    task.wait(0.02)
+                                    task.wait(0.05)
                                     firetouchinterest(rootPart, coin, 1)
                                 end
                             end)
-                            task.wait(0.05)
+                            task.wait(0.1)
                         end
                     end
                 end
@@ -513,6 +513,6 @@ task.spawn(function()
                 fakeCharacter = nil
             end
         end
-        task.wait(0.3)
+        task.wait(0.5)
     end
 end)
