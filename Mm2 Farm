@@ -1,45 +1,159 @@
--- Script de Auto-Farm de Monedas para MM2 (Optimizado para Delta)
+--[[ 
+    Script de Auto-Farm MM2 (Bajo el Mapa / Volando)
+    Optimizado para evitar LAG en Delta Mobile
+]]--
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Variables de Control
 local autoFarmActive = false
-local farmSpeed = 16 -- Velocidad de movimiento
+local farmDelay = 0.25 -- Frecuencia de recolección (evita el lag masivo)
+local undergroundOffset = Vector3.new(0, -4.5, 0) -- Distancia por debajo de la moneda
 
--- Crear Interfaz Gráfica (UI Simple)
-local ScreenGui = Instance.new("ScreenGui")
+-- 1. PANTALLA DE CARGA (10 Segundos)
+local LoadingGui = Instance.new("ScreenGui")
+local LoadFrame = Instance.new("Frame")
+local LoadTitle = Instance.new("TextLabel")
+local LoadBarBackground = Instance.new("Frame")
+local LoadBar = Instance.new("Frame")
+local LoadPercentage = Instance.new("TextLabel")
+
+LoadingGui.Name = "MM2LoadingGui"
+LoadingGui.Parent = PlayerGui
+LoadingGui.ResetOnSpawn = false
+
+LoadFrame.Parent = LoadingGui
+LoadFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+LoadFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadFrame.Size = UDim2.new(0, 300, 0, 150)
+Instance.new("UICorner", LoadFrame)
+
+LoadTitle.Parent = LoadFrame
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.Position = UDim2.new(0, 0, 0.15, 0)
+LoadTitle.Size = UDim2.new(1, 0, 0, 30)
+LoadTitle.Font = Enum.Font.GothamBold
+LoadTitle.Text = "Cargando MM2 Auto-Farm..."
+LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadTitle.TextSize = 16
+
+LoadBarBackground.Parent = LoadFrame
+LoadBarBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+LoadBarBackground.Position = UDim2.new(0.1, 0, 0.55, 0)
+LoadBarBackground.Size = UDim2.new(0.8, 0, 0, 20)
+Instance.new("UICorner", LoadBarBackground)
+
+LoadBar.Parent = LoadBarBackground
+LoadBar.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+LoadBar.Size = UDim2.new(0, 0, 1, 0)
+Instance.new("UICorner", LoadBar)
+
+LoadPercentage.Parent = LoadFrame
+LoadPercentage.BackgroundTransparency = 1
+LoadPercentage.Position = UDim2.new(0, 0, 0.75, 0)
+LoadPercentage.Size = UDim2.new(1, 0, 0, 20)
+LoadPercentage.Font = Enum.Font.Gotham
+LoadPercentage.Text = "0%"
+LoadPercentage.TextColor3 = Color3.fromRGB(200, 200, 200)
+LoadPercentage.TextSize = 14
+
+local startTime = tick()
+local duration = 10
+
+while tick() - startTime < duration do
+    local elapsed = tick() - startTime
+    local progress = math.clamp(elapsed / duration, 0, 1)
+    LoadBar.Size = UDim2.new(progress, 0, 1, 0)
+    LoadPercentage.Text = math.floor(progress * 100) .. "%"
+    task.wait(0.05)
+end
+
+LoadingGui:Destroy()
+
+-- 2. DISCORD FALSO
+local DiscordGui = Instance.new("ScreenGui")
+local DiscFrame = Instance.new("Frame")
+local DiscTitle = Instance.new("TextLabel")
+local DiscDesc = Instance.new("TextLabel")
+local JoinButton = Instance.new("TextButton")
+
+DiscordGui.Name = "MM2DiscordGui"
+DiscordGui.Parent = PlayerGui
+DiscordGui.ResetOnSpawn = false
+
+DiscFrame.Parent = DiscordGui
+DiscFrame.BackgroundColor3 = Color3.fromRGB(43, 45, 49)
+DiscFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+DiscFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+DiscFrame.Size = UDim2.new(0, 320, 0, 180)
+Instance.new("UICorner", DiscFrame)
+
+DiscTitle.Parent = DiscFrame
+DiscTitle.BackgroundTransparency = 1
+DiscTitle.Position = UDim2.new(0, 0, 0.1, 0)
+DiscTitle.Size = UDim2.new(1, 0, 0, 30)
+DiscTitle.Font = Enum.Font.GothamBold
+DiscTitle.Text = "¡Únete a nuestra Comunidad!"
+DiscTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+DiscTitle.TextSize = 18
+
+DiscDesc.Parent = DiscFrame
+DiscDesc.BackgroundTransparency = 1
+DiscDesc.Position = UDim2.new(0.1, 0, 0.35, 0)
+DiscDesc.Size = UDim2.new(0.8, 0, 0, 40)
+DiscDesc.Font = Enum.Font.Gotham
+DiscDesc.Text = "discord.gg/ejemplo-falso\nPulsa continuar para abrir el script."
+DiscDesc.TextColor3 = Color3.fromRGB(180, 187, 196)
+DiscDesc.TextSize = 13
+
+JoinButton.Parent = DiscFrame
+JoinButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+JoinButton.Position = UDim2.new(0.1, 0, 0.7, 0)
+JoinButton.Size = UDim2.new(0.8, 0, 0, 40)
+JoinButton.Font = Enum.Font.GothamBold
+JoinButton.Text = "Continuar al Script"
+JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinButton.TextSize = 14
+Instance.new("UICorner", JoinButton)
+
+local scriptUnlocked = false
+JoinButton.MouseButton1Click:Connect(function()
+    scriptUnlocked = true
+    DiscordGui:Destroy()
+end)
+
+repeat task.wait(0.1) until scriptUnlocked
+
+-- 3. PANEL Y AUTO-FARM BAJO EL MAPA
+local MainGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
 local ToggleButton = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
-local UICornerBtn = Instance.new("UICorner")
 
-ScreenGui.Name = "MM2CoinFarmGUI"
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+MainGui.Name = "MM2UndergroundFarm"
+MainGui.Parent = PlayerGui
+MainGui.ResetOnSpawn = false
 
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
+MainFrame.Parent = MainGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
 MainFrame.Size = UDim2.new(0, 200, 0, 100)
 MainFrame.Active = true
-MainFrame.Draggable = true -- Permite mover la ventana en la pantalla
-
-UICorner.Parent = MainFrame
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame)
 
 Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 Title.BackgroundTransparency = 1.0
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "MM2 Auto-Farm"
+Title.Text = "Underground Farm"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
 
-ToggleButton.Name = "ToggleButton"
 ToggleButton.Parent = MainFrame
 ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
 ToggleButton.Position = UDim2.new(0.1, 0, 0.45, 0)
@@ -47,36 +161,24 @@ ToggleButton.Size = UDim2.new(0.8, 0, 0, 40)
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.Text = "Estado: OFF"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize, ToggleButton.AutoButtonColor = 14, true
+ToggleButton.TextSize = 14
+Instance.new("UICorner", ToggleButton)
 
-UICornerBtn.Parent = ToggleButton
-
--- Función para buscar y recolectar monedas en el mapa
-local function getNearestCoin()
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-    
-    local rootPart = character.HumanoidRootPart
-    local closestCoin = nil
-    local shortestDistance = math.huge
-
-    -- En MM2, las monedas suelen estar dentro de un contenedor en el Workspace o repartidas
+-- Buscar monedas válidas en la partida
+local function getCoins()
+    local coins = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj.Name == "Coin" or obj.Name == "CoinVisual" or (obj:IsA("BasePart") and obj.Parent and obj.Parent.Name == "CoinContainer") then
             local targetPart = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
             if targetPart then
-                local distance = (rootPart.Position - targetPart.Position).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    closestCoin = targetPart
-                end
+                table.insert(coins, targetPart)
             end
         end
     end
-    return closestCoin
+    return coins
 end
 
--- Lógica Principal del Auto-Farm
+-- Botón Activar / Desactivar
 ToggleButton.MouseButton1Click:Connect(function()
     autoFarmActive = not autoFarmActive
     if autoFarmActive then
@@ -88,20 +190,34 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
-RunService.Stepped:Connect(function()
-    if autoFarmActive then
-        pcall(function()
-            local character = LocalPlayer.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = character.HumanoidRootPart
-                local coin = getNearestCoin()
-                if coin then
-                    -- Teletransportación suave o movimiento directo hacia la moneda
-                    rootPart.CFrame = coin.CFrame + Vector3.new(0, 2, 0)
+-- Bucle optimizado sin lag
+task.spawn(function()
+    while true do
+        if autoFarmActive then
+            pcall(function()
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = character.HumanoidRootPart
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    
+                    -- Previene caer al vacío congelando la velocidad vertical
+                    rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    
+                    local availableCoins = getCoins()
+                    if #availableCoins > 0 then
+                        for _, coin in ipairs(availableCoins) do
+                            if not autoFarmActive then break end
+                            if coin and coin.Parent then
+                                -- Posiciona al jugador justo por debajo de la moneda
+                                rootPart.CFrame = coin.CFrame + undergroundOffset
+                                rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                task.wait(farmDelay)
+                            end
+                        end
+                    end
                 end
-            end
-        end)
+            end)
+        end
+        task.wait(0.2)
     end
 end)
-
-print("¡Script de Auto-Farm cargado con éxito!")
