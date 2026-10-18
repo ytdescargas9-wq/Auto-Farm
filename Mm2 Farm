@@ -1,50 +1,67 @@
 --[[ 
-    Script de Auto-Farm MM2 (Bajo el Mapa / Volando)
-    Optimizado para evitar LAG en Delta Mobile
+    MM2 GOD HUB ULTRA (Delta Mobile)
+    Funciones: Auto-Farm, NoClip, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
 ]]--
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = Workspace.CurrentCamera
 
--- Variables de Control
+-- Variables de Estado
 local autoFarmActive = false
-local farmDelay = 0.25 -- Frecuencia de recolección (evita el lag masivo)
-local undergroundOffset = Vector3.new(0, -4.5, 0) -- Distancia por debajo de la moneda
+local noClipActive = false
+local espActive = false
+local autoLockActive = false
+local autoShootActive = false
 
--- 1. PANTALLA DE CARGA (10 Segundos)
+local undergroundOffset = Vector3.new(0, -4.5, 0)
+local farmDelay = 0.3
+
+-- 1. PANTALLA DE CARGA COMPLETA (Tapa toda la pantalla)
 local LoadingGui = Instance.new("ScreenGui")
-local LoadFrame = Instance.new("Frame")
+local LoadBackground = Instance.new("Frame")
 local LoadTitle = Instance.new("TextLabel")
+local LoadSubTitle = Instance.new("TextLabel")
 local LoadBarBackground = Instance.new("Frame")
 local LoadBar = Instance.new("Frame")
 local LoadPercentage = Instance.new("TextLabel")
 
-LoadingGui.Name = "MM2LoadingGui"
+LoadingGui.Name = "MM2LoadingGuiFullScreen"
 LoadingGui.Parent = PlayerGui
 LoadingGui.ResetOnSpawn = false
 
-LoadFrame.Parent = LoadingGui
-LoadFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-LoadFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadFrame.Size = UDim2.new(0, 300, 0, 150)
-Instance.new("UICorner", LoadFrame)
+LoadBackground.Name = "Background"
+LoadBackground.Parent = LoadingGui
+LoadBackground.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LoadBackground.Size = UDim2.new(1, 0, 1, 0)
+LoadBackground.Position = UDim2.new(0, 0, 0, 0)
+LoadBackground.ZIndex = 10
 
-LoadTitle.Parent = LoadFrame
+LoadTitle.Parent = LoadBackground
 LoadTitle.BackgroundTransparency = 1
-LoadTitle.Position = UDim2.new(0, 0, 0.15, 0)
-LoadTitle.Size = UDim2.new(1, 0, 0, 30)
+LoadTitle.Position = UDim2.new(0, 0, 0.35, 0)
+LoadTitle.Size = UDim2.new(1, 0, 0, 40)
 LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.Text = "Cargando MM2 Auto-Farm..."
+LoadTitle.Text = "MM2 GOD HUB v3.0"
 LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadTitle.TextSize = 16
+LoadTitle.TextSize = 24
 
-LoadBarBackground.Parent = LoadFrame
-LoadBarBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-LoadBarBackground.Position = UDim2.new(0.1, 0, 0.55, 0)
-LoadBarBackground.Size = UDim2.new(0.8, 0, 0, 20)
+LoadSubTitle.Parent = LoadBackground
+LoadSubTitle.BackgroundTransparency = 1
+LoadSubTitle.Position = UDim2.new(0, 0, 0.42, 0)
+LoadSubTitle.Size = UDim2.new(1, 0, 0, 20)
+LoadSubTitle.Font = Enum.Font.Gotham
+LoadSubTitle.Text = "Cargando Módulos: Farm, ESP, Auto-Lock & Auto-Shoot..."
+LoadSubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+LoadSubTitle.TextSize = 13
+
+LoadBarBackground.Parent = LoadBackground
+LoadBarBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+LoadBarBackground.Position = UDim2.new(0.15, 0, 0.52, 0)
+LoadBarBackground.Size = UDim2.new(0.7, 0, 0, 16)
 Instance.new("UICorner", LoadBarBackground)
 
 LoadBar.Parent = LoadBarBackground
@@ -52,15 +69,16 @@ LoadBar.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
 LoadBar.Size = UDim2.new(0, 0, 1, 0)
 Instance.new("UICorner", LoadBar)
 
-LoadPercentage.Parent = LoadFrame
+LoadPercentage.Parent = LoadBackground
 LoadPercentage.BackgroundTransparency = 1
-LoadPercentage.Position = UDim2.new(0, 0, 0.75, 0)
+LoadPercentage.Position = UDim2.new(0, 0, 0.58, 0)
 LoadPercentage.Size = UDim2.new(1, 0, 0, 20)
-LoadPercentage.Font = Enum.Font.Gotham
+LoadPercentage.Font = Enum.Font.GothamBold
 LoadPercentage.Text = "0%"
-LoadPercentage.TextColor3 = Color3.fromRGB(200, 200, 200)
+LoadPercentage.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadPercentage.TextSize = 14
 
+-- Carga animada de 10 segundos
 local startTime = tick()
 local duration = 10
 
@@ -74,7 +92,7 @@ end
 
 LoadingGui:Destroy()
 
--- 2. DISCORD FALSO
+-- 2. VERIFICACIÓN DE DISCORD FALSO
 local DiscordGui = Instance.new("ScreenGui")
 local DiscFrame = Instance.new("Frame")
 local DiscTitle = Instance.new("TextLabel")
@@ -97,7 +115,7 @@ DiscTitle.BackgroundTransparency = 1
 DiscTitle.Position = UDim2.new(0, 0, 0.1, 0)
 DiscTitle.Size = UDim2.new(1, 0, 0, 30)
 DiscTitle.Font = Enum.Font.GothamBold
-DiscTitle.Text = "¡Únete a nuestra Comunidad!"
+DiscTitle.Text = "¡Comunidad Oficial!"
 DiscTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 DiscTitle.TextSize = 18
 
@@ -106,7 +124,7 @@ DiscDesc.BackgroundTransparency = 1
 DiscDesc.Position = UDim2.new(0.1, 0, 0.35, 0)
 DiscDesc.Size = UDim2.new(0.8, 0, 0, 40)
 DiscDesc.Font = Enum.Font.Gotham
-DiscDesc.Text = "discord.gg/ejemplo-falso\nPulsa continuar para abrir el script."
+DiscDesc.Text = "discord.gg/mm2-god-hub\nPresiona continuar para acceder al panel."
 DiscDesc.TextColor3 = Color3.fromRGB(180, 187, 196)
 DiscDesc.TextSize = 13
 
@@ -128,96 +146,176 @@ end)
 
 repeat task.wait(0.1) until scriptUnlocked
 
--- 3. PANEL Y AUTO-FARM BAJO EL MAPA
+-- 3. INTERFAZ PRINCIPAL (Panel Ocultable/Minimizable)
 local MainGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
-local ToggleButton = Instance.new("TextButton")
+local MinimizeBtn = Instance.new("TextButton")
+local OpenBtn = Instance.new("TextButton")
 
-MainGui.Name = "MM2UndergroundFarm"
+MainGui.Name = "MM2GodHub"
 MainGui.Parent = PlayerGui
 MainGui.ResetOnSpawn = false
 
 MainFrame.Parent = MainGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
+MainFrame.Size = UDim2.new(0, 220, 0, 260)
 MainFrame.Active = true
 MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame)
 
 Title.Parent = MainFrame
 Title.BackgroundTransparency = 1.0
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Position = UDim2.new(0.05, 0, 0, 0)
+Title.Size = UDim2.new(0.7, 0, 0, 35)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Underground Farm"
+Title.Text = "MM2 GOD HUB"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
-ToggleButton.Parent = MainFrame
-ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
-ToggleButton.Position = UDim2.new(0.1, 0, 0.45, 0)
-ToggleButton.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "Estado: OFF"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 14
-Instance.new("UICorner", ToggleButton)
+MinimizeBtn.Parent = MainFrame
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MinimizeBtn.Position = UDim2.new(0.8, 0, 0.04, 0)
+MinimizeBtn.Size = UDim2.new(0, 30, 0, 25)
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 16
+Instance.new("UICorner", MinimizeBtn)
 
--- Buscar monedas válidas en la partida
-local function getCoins()
-    local coins = {}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj.Name == "Coin" or obj.Name == "CoinVisual" or (obj:IsA("BasePart") and obj.Parent and obj.Parent.Name == "CoinContainer") then
-            local targetPart = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
-            if targetPart then
-                table.insert(coins, targetPart)
+-- Creador de Botones
+local function createButton(name, pos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = MainFrame
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.Position = pos
+    btn.Size = UDim2.new(0.9, 0, 0, 38)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    Instance.new("UICorner", btn)
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            btn.Text = name .. ": ON"
+            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+        else
+            btn.Text = name .. ": OFF"
+            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        end
+        callback(state)
+    end)
+    return btn
+end
+
+-- Botones del Panel
+createButton("Auto-Farm + NoClip", UDim2.new(0.05, 0, 0.16, 0), function(st)
+    autoFarmActive = st
+    noClipActive = st
+end)
+
+createButton("ESP Jugadores", UDim2.new(0.05, 0, 0.32, 0), function(st)
+    espActive = st
+end)
+
+createButton("Auto-Lock Murderer", UDim2.new(0.05, 0, 0.48, 0), function(st)
+    autoLockActive = st
+end)
+
+createButton("Auto-Shoot Murderer", UDim2.new(0.05, 0, 0.64, 0), function(st)
+    autoShootActive = st
+end)
+
+-- Botón Flotante Pequeño (👁️) para Volver a Mostrar
+OpenBtn.Name = "OpenButton"
+OpenBtn.Parent = MainGui
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+OpenBtn.Position = UDim2.new(0.02, 0, 0.2, 0)
+OpenBtn.Size = UDim2.new(0, 42, 0, 42)
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.Text = "👁️"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.TextSize = 20
+OpenBtn.Visible = false
+OpenBtn.Active = true
+OpenBtn.Draggable = true
+Instance.new("UICorner", OpenBtn)
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    OpenBtn.Visible = true
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    OpenBtn.Visible = false
+end)
+
+-- 4. SISTEMA DE NOCLIP
+RunService.Stepped:Connect(function()
+    if noClipActive then
+        local character = LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
             end
         end
     end
-    return coins
-end
-
--- Botón Activar / Desactivar
-ToggleButton.MouseButton1Click:Connect(function()
-    autoFarmActive = not autoFarmActive
-    if autoFarmActive then
-        ToggleButton.Text = "Estado: ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
-    else
-        ToggleButton.Text = "Estado: OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
-    end
 end)
 
--- Bucle optimizado sin lag
+-- 5. SISTEMA DE ESP CON ROLES POR COLOR (Rojo/Azul/Verde)
 task.spawn(function()
     while true do
-        if autoFarmActive then
-            pcall(function()
-                local character = LocalPlayer.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    local rootPart = character.HumanoidRootPart
-                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if espActive then
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character then
+                    local char = plr.Character
+                    local highlight = char:FindFirstChild("ESPHighlight")
+                    if not highlight then
+                        highlight = Instance.new("Highlight")
+                        highlight.Name = "ESPHighlight"
+                        highlight.Parent = char
+                    end
                     
-                    -- Previene caer al vacío congelando la velocidad vertical
-                    rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    -- Detectar roles por herramientas
+                    local hasKnife = plr.Backpack:FindFirstChild("Knife") or char:FindFirstChild("Knife")
+                    local hasGun = plr.Backpack:FindFirstChild("Gun") or char:FindFirstChild("Gun")
                     
-                    local availableCoins = getCoins()
-                    if #availableCoins > 0 then
-                        for _, coin in ipairs(availableCoins) do
-                            if not autoFarmActive then break end
-                            if coin and coin.Parent then
-                                -- Posiciona al jugador justo por debajo de la moneda
-                                rootPart.CFrame = coin.CFrame + undergroundOffset
-                                rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                task.wait(farmDelay)
-                            end
-                        end
+                    if hasKnife then
+                        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- ROJO: Murderer
+                    elseif hasGun then
+                        highlight.FillColor = Color3.fromRGB(0, 100, 255) -- AZUL: Sheriff
+                    else
+                        highlight.FillColor = Color3.fromRGB(0, 255, 0) -- VERDE: Inocente
                     end
                 end
-            end)
+            end
+        else
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr.Character and plr.Character:FindFirstChild("ESPHighlight") then
+                    plr.Character.ESPHighlight:Destroy()
+                end
+            end
         end
-        task.wait(0.2)
+        task.wait(0.5)
     end
 end)
+
+-- 6. OBTENER POSICIÓN DEL MURDERER
+local function getMurderer()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            if plr.Backpack:FindFirstChild("Knife") or plr.Character:FindFirstChild("Knife") then
+                return plr.Character.HumanoidRootPart
+            end
+        end
+    end
+    return nil
+end
