@@ -1,6 +1,6 @@
 --[[ 
-    MM2 GOD HUB ULTRA (Delta Mobile)
-    Funciones: Auto-Farm, NoClip, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
+    MM2 GOD HUB ULTRA (Delta Mobile - Versión Monedas Fix)
+    Funciones: Auto-Farm (Touch Interest Fix), NoClip, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
 ]]--
 
 local Players = game:GetService("Players")
@@ -17,10 +17,10 @@ local espActive = false
 local autoLockActive = false
 local autoShootActive = false
 
-local undergroundOffset = Vector3.new(0, -4.5, 0)
-local farmDelay = 0.3
+local undergroundOffset = Vector3.new(0, -2.5, 0) -- Ajustado para mejor contacto
+local farmDelay = 0.2
 
--- 1. PANTALLA DE CARGA COMPLETA (Tapa toda la pantalla)
+-- 1. PANTALLA DE CARGA COMPLETA
 local LoadingGui = Instance.new("ScreenGui")
 local LoadBackground = Instance.new("Frame")
 local LoadTitle = Instance.new("TextLabel")
@@ -45,7 +45,7 @@ LoadTitle.BackgroundTransparency = 1
 LoadTitle.Position = UDim2.new(0, 0, 0.35, 0)
 LoadTitle.Size = UDim2.new(1, 0, 0, 40)
 LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.Text = "MM2 GOD HUB v3.0"
+LoadTitle.Text = "MM2 GOD HUB v3.1"
 LoadTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadTitle.TextSize = 24
 
@@ -54,7 +54,7 @@ LoadSubTitle.BackgroundTransparency = 1
 LoadSubTitle.Position = UDim2.new(0, 0, 0.42, 0)
 LoadSubTitle.Size = UDim2.new(1, 0, 0, 20)
 LoadSubTitle.Font = Enum.Font.Gotham
-LoadSubTitle.Text = "Cargando Módulos: Farm, ESP, Auto-Lock & Auto-Shoot..."
+LoadSubTitle.Text = "Cargando Módulos: Farm Fix, ESP, Auto-Lock & Auto-Shoot..."
 LoadSubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
 LoadSubTitle.TextSize = 13
 
@@ -78,7 +78,6 @@ LoadPercentage.Text = "0%"
 LoadPercentage.TextColor3 = Color3.fromRGB(255, 255, 255)
 LoadPercentage.TextSize = 14
 
--- Carga animada de 10 segundos
 local startTime = tick()
 local duration = 10
 
@@ -146,7 +145,7 @@ end)
 
 repeat task.wait(0.1) until scriptUnlocked
 
--- 3. INTERFAZ PRINCIPAL (Panel Ocultable/Minimizable)
+-- 3. INTERFAZ PRINCIPAL
 local MainGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -185,7 +184,6 @@ MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeBtn.TextSize = 16
 Instance.new("UICorner", MinimizeBtn)
 
--- Creador de Botones
 local function createButton(name, pos, callback)
     local btn = Instance.new("TextButton")
     btn.Parent = MainFrame
@@ -213,7 +211,6 @@ local function createButton(name, pos, callback)
     return btn
 end
 
--- Botones del Panel
 createButton("Auto-Farm + NoClip", UDim2.new(0.05, 0, 0.16, 0), function(st)
     autoFarmActive = st
     noClipActive = st
@@ -231,7 +228,6 @@ createButton("Auto-Shoot Murderer", UDim2.new(0.05, 0, 0.64, 0), function(st)
     autoShootActive = st
 end)
 
--- Botón Flotante Pequeño (👁️) para Volver a Mostrar
 OpenBtn.Name = "OpenButton"
 OpenBtn.Parent = MainGui
 OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
@@ -256,7 +252,7 @@ OpenBtn.MouseButton1Click:Connect(function()
     OpenBtn.Visible = false
 end)
 
--- 4. SISTEMA DE NOCLIP
+-- 4. NOCLIP
 RunService.Stepped:Connect(function()
     if noClipActive then
         local character = LocalPlayer.Character
@@ -270,7 +266,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- 5. SISTEMA DE ESP CON ROLES POR COLOR (Rojo/Azul/Verde)
+-- 5. ESP
 task.spawn(function()
     while true do
         if espActive then
@@ -284,7 +280,6 @@ task.spawn(function()
                         highlight.Parent = char
                     end
                     
-                    -- Detectar roles por herramientas
                     local hasKnife = plr.Backpack:FindFirstChild("Knife") or char:FindFirstChild("Knife")
                     local hasGun = plr.Backpack:FindFirstChild("Gun") or char:FindFirstChild("Gun")
                     
@@ -308,7 +303,7 @@ task.spawn(function()
     end
 end)
 
--- 6. OBTENER POSICIÓN DEL MURDERER
+-- 6. OBTENER MURDERER
 local function getMurderer()
     for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -319,3 +314,84 @@ local function getMurderer()
     end
     return nil
 end
+
+-- 7. AUTO-LOCK & AUTO-SHOOT
+RunService.RenderStepped:Connect(function()
+    if autoLockActive then
+        local murderRoot = getMurderer()
+        if murderRoot then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, murderRoot.Position)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if autoShootActive then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local gun = char and (char:FindFirstChild("Gun") or LocalPlayer.Backpack:FindFirstChild("Gun"))
+                local murderRoot = getMurderer()
+                
+                if gun and murderRoot then
+                    if gun.Parent == LocalPlayer.Backpack then
+                        gun.Parent = char
+                    end
+                    gun:Activate()
+                end
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- 8. AUTO-FARM CORREGIDO (TOUCH INTEREST FIX)
+local function getCoins()
+    local coins = {}
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if (obj.Name == "Coin" or obj.Name == "CoinContainer" or obj.Name == "CoinVisual") then
+            if obj:IsA("BasePart") then
+                table.insert(coins, obj)
+            elseif obj:FindFirstChildWhichIsA("BasePart") then
+                table.insert(coins, obj:FindFirstChildWhichIsA("BasePart"))
+            end
+        end
+    end
+    return coins
+end
+
+task.spawn(function()
+    while true do
+        if autoFarmActive then
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = character.HumanoidRootPart
+                local coins = getCoins()
+
+                if #coins > 0 then
+                    for i = 1, #coins do
+                        if not autoFarmActive then break end
+                        local coin = coins[i]
+                        if coin and coin.Parent then
+                            -- Teletransporta al personaje muy cerca de la moneda
+                            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            rootPart.CFrame = coin.CFrame + undergroundOffset
+                            
+                            -- Forzar evento de toque (Touch Interest) compatible con ejecutores
+                            pcall(function()
+                                if firetouchinterest then
+                                    firetouchinterest(rootPart, coin, 0)
+                                    task.wait(0.05)
+                                    firetouchinterest(rootPart, coin, 1)
+                                end
+                            end)
+
+                            task.wait(farmDelay)
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+end)
