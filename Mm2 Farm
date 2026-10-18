@@ -1,9 +1,6 @@
 --[[ 
-    MM2 GOD HUB ULTRA v3.9 (Sistema Auto-Farm Directo a Monedas)
-    - Auto-Farm mediante teletransporte progresivo/suave de moneda en moneda
-    - Pantalla de Carga Mediana (10 Segundos)
-    - Fling Automático al Murderer al Morir (On-Death)
-    - NoClip Independiente, Invisibilidad, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
+    MM2 GOD HUB ULTRA v3.9 (Sistema Maniquí Falso Anti-Kick + Límites Seguros)
+    - Auto-Farm con Clon Falso y restricciones de distancia/mapa
 ]]--
 
 local Players = game:GetService("Players")
@@ -22,8 +19,11 @@ local espActive = false
 local autoLockActive = false
 local autoShootActive = false
 
-local farmSpeed = 15 -- Velocidad de desplazamiento entre monedas
+local farmSpeed = 12 
+local undergroundOffset = Vector3.new(0, -0.8, 0)
+local maxFarmDistance = 150 -- Distancia máxima permitida desde el punto de inicio para no salir del mapa
 local fakeCharacter = nil
+local startPosition = nil
 
 -- 1. PANTALLA DE CARGA MEDIANA VISIBLE (10 SEGUNDOS)
 local LoadingGui = Instance.new("ScreenGui")
@@ -65,7 +65,7 @@ LoadSubTitle.BackgroundTransparency = 1
 LoadSubTitle.Position = UDim2.new(0, 0, 0.35, 0)
 LoadSubTitle.Size = UDim2.new(1, 0, 0, 20)
 LoadSubTitle.Font = Enum.Font.Gotham
-LoadSubTitle.Text = "Iniciando Sistema de Auto-Farm Directo..."
+LoadSubTitle.Text = "Iniciando Sistema Seguro Anti-Salida..."
 LoadSubTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
 LoadSubTitle.TextSize = 13
 LoadSubTitle.ZIndex = 101
@@ -106,7 +106,7 @@ end
 
 LoadingGui:Destroy()
 
--- 2. VERIFICACIÓN DE DISCORD FALSO
+-- 2. VERIFICACIÓN DE DISCORD
 local DiscordGui = Instance.new("ScreenGui")
 local DiscFrame = Instance.new("Frame")
 local DiscTitle = Instance.new("TextLabel")
@@ -229,6 +229,9 @@ end
 -- Botones
 createButton("Auto-Farm Monedas", UDim2.new(0.05, 0, 0.12, 0), function(st)
     autoFarmActive = st
+    if st and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        startPosition = LocalPlayer.Character.HumanoidRootPart.Position
+    end
 end)
 
 createButton("NoClip", UDim2.new(0.05, 0, 0.24, 0), function(st)
@@ -429,7 +432,22 @@ task.spawn(function()
     end
 end)
 
--- 10. AUTO-FARM DIRECTO A LAS MONEDAS
+-- 10. AUTO-FARM CON MANIQUÍ FALSO Y RESTRICCIÓN DE DISTANCIA/MAPA
+local function createFakeBody(char)
+    if fakeCharacter then fakeCharacter:Destroy() end
+    char.Archivable = true
+    fakeCharacter = char:Clone()
+    fakeCharacter.Name = "FakeMannequin"
+    fakeCharacter.Parent = Workspace
+    
+    for _, part in pairs(fakeCharacter:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = true
+            part.CanCollide = false
+        end
+    end
+end
+
 local function getCoins()
     local coins = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -454,38 +472,61 @@ task.spawn(function()
             local character = LocalPlayer.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local rootPart = character.HumanoidRootPart
-                local coins = getCoins()
                 
+                if not startPosition then
+                    startPosition = rootPart.Position
+                end
+
+                if not fakeCharacter then
+                    createFakeBody(character)
+                end
+
+                local coins = getCoins()
                 if #coins > 0 then
                     for i = 1, #coins do
                         if not autoFarmActive then break end
                         local coin = coins[i]
                         if coin and coin.Parent then
-                            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                            
-                            -- Movimiento directo a la moneda
-                            local targetCFrame = coin.CFrame
-                            local distance = (rootPart.Position - targetCFrame.Position).Magnitude
-                            local travelTime = math.clamp(distance / farmSpeed, 0.1, 0.5)
-                            
-                            local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
-                            local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
-                            tween:Play()
-                            tween.Completed:Wait()
+                            -- RESTRICCIÓN: Validar que la moneda no esté demasiado lejos del punto de inicio (fuera del mapa)
+                            local distFromStart = (coin.Position - startPosition).Magnitude
+                            if distFromStart <= maxFarmDistance then
+                                rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                
+                                local targetCFrameUnder = coin.CFrame + undergroundOffset
+                                local distance = (rootPart.Position - targetCFrameUnder.Position).Magnitude
+                                local travelTime = math.clamp(distance / farmSpeed, 0.2, 0.8)
+                                
+                                local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
+                                local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrameUnder})
+                                tween:Play()
+                                tween.Completed:Wait()
 
-                            pcall(function()
-                                if firetouchinterest then
-                                    firetouchinterest(rootPart, coin, 0)
-                                    task.wait(0.02)
-                                    firetouchinterest(rootPart, coin, 1)
-                                end
-                            end)
-                            task.wait(0.05)
+                                pcall(function()
+                                    if firetouchinterest then
+                                        firetouchinterest(rootPart, coin, 0)
+                                        task.wait(0.05)
+                                        firetouchinterest(rootPart, coin, 1)
+                                    end
+                                end)
+
+                                local targetCFrameSurface = coin.CFrame
+                                local upTween = TweenService:Create(rootPart, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {CFrame = targetCFrameSurface})
+                                upTween:Play()
+                                upTween.Completed:Wait()
+
+                                task.wait(0.1)
+                            end
                         end
                     end
                 end
             end
+        else
+            if fakeCharacter then
+                fakeCharacter:Destroy()
+                fakeCharacter = nil
+            end
+            startPosition = nil
         end
-        task.wait(0.3)
+        task.wait(0.5)
     end
 end)
