@@ -1,9 +1,9 @@
 --[[ 
-    MM2 GOD HUB ULTRA v3.9 (Sistema Maniquí Falso Anti-Kick)
+    MM2 GOD HUB ULTRA v3.9 (Sistema Maniquí Falso Anti-Kick + Anti-Fling)
     - Auto-Farm con Clon Falso (Tu cuerpo real agarra monedas mientras el maniquí se queda visible)
     - Pantalla de Carga Mediana (10 Segundos - Tamaño Tienda MM2)
     - Fling Automático al Murderer al Morir (On-Death)
-    - NoClip Independiente, Invisibilidad, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot
+    - NoClip Independiente, Invisibilidad, ESP (Rojo/Azul/Verde), Auto-Lock, Auto-Shoot, Anti-Fling
 ]]--
 
 local Players = game:GetService("Players")
@@ -21,8 +21,9 @@ local invisibleActive = false
 local espActive = false
 local autoLockActive = false
 local autoShootActive = false
+local antiFlingActive = false
 
-local farmSpeed = 12 -- Velocidad reducida para un movimiento más lento y seguro
+local farmSpeed = 12 -- Velocidad reducida y segura para evitar baneos/kicks por posición inválida
 local undergroundOffset = Vector3.new(0, -2.5, 0)
 local fakeCharacter = nil
 
@@ -161,7 +162,7 @@ end)
 
 repeat task.wait(0.1) until scriptUnlocked
 
--- 3. INTERFAZ PRINCIPAL
+-- 3. INTERFAZ PRINCIPAL (Ventana Grande de 500 de alto)
 local MainGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -175,7 +176,7 @@ MainGui.ResetOnSpawn = false
 MainFrame.Parent = MainGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
-MainFrame.Size = UDim2.new(0, 220, 0, 340)
+MainFrame.Size = UDim2.new(0, 220, 0, 500)
 MainFrame.Active = true
 MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame)
@@ -183,21 +184,21 @@ Instance.new("UICorner", MainFrame)
 Title.Parent = MainFrame
 Title.BackgroundTransparency = 1.0
 Title.Position = UDim2.new(0.05, 0, 0, 0)
-Title.Size = UDim2.new(0.7, 0, 0, 35)
+Title.Size = UDim2.new(0.7, 0, 0, 40)
 Title.Font = Enum.Font.GothamBold
 Title.Text = "MM2 GOD HUB"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 14
+Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 MinimizeBtn.Parent = MainFrame
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-MinimizeBtn.Position = UDim2.new(0.8, 0, 0.025, 0)
-MinimizeBtn.Size = UDim2.new(0, 30, 0, 25)
+MinimizeBtn.Position = UDim2.new(0.8, 0, 0.02, 0)
+MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
 MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.Text = "-"
 MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeBtn.TextSize = 16
+MinimizeBtn.TextSize = 18
 Instance.new("UICorner", MinimizeBtn)
 
 local function createButton(name, pos, callback)
@@ -205,11 +206,11 @@ local function createButton(name, pos, callback)
     btn.Parent = MainFrame
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     btn.Position = pos
-    btn.Size = UDim2.new(0.9, 0, 0, 34)
+    btn.Size = UDim2.new(0.9, 0, 0, 42)
     btn.Font = Enum.Font.GothamBold
     btn.Text = name .. ": OFF"
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 12
+    btn.TextSize = 13
     Instance.new("UICorner", btn)
     
     local state = false
@@ -227,29 +228,33 @@ local function createButton(name, pos, callback)
     return btn
 end
 
--- Botones
-createButton("Auto-Farm Monedas", UDim2.new(0.05, 0, 0.12, 0), function(st)
+-- Botones organizados con espacio amplio y cómodo
+createButton("Auto-Farm Monedas", UDim2.new(0.05, 0, 0.10, 0), function(st)
     autoFarmActive = st
 end)
 
-createButton("NoClip", UDim2.new(0.05, 0, 0.24, 0), function(st)
+createButton("NoClip", UDim2.new(0.05, 0, 0.22, 0), function(st)
     noClipActive = st
 end)
 
-createButton("Invisibilidad", UDim2.new(0.05, 0, 0.36, 0), function(st)
+createButton("Invisibilidad", UDim2.new(0.05, 0, 0.34, 0), function(st)
     invisibleActive = st
 end)
 
-createButton("ESP Jugadores", UDim2.new(0.05, 0, 0.48, 0), function(st)
+createButton("ESP Jugadores", UDim2.new(0.05, 0, 0.46, 0), function(st)
     espActive = st
 end)
 
-createButton("Auto-Lock Murderer", UDim2.new(0.05, 0, 0.60, 0), function(st)
+createButton("Auto-Lock Murderer", UDim2.new(0.05, 0, 0.58, 0), function(st)
     autoLockActive = st
 end)
 
-createButton("Auto-Shoot Murderer", UDim2.new(0.05, 0, 0.72, 0), function(st)
+createButton("Auto-Shoot Murderer", UDim2.new(0.05, 0, 0.70, 0), function(st)
     autoShootActive = st
+end)
+
+createButton("Anti-Fling", UDim2.new(0.05, 0, 0.82, 0), function(st)
+    antiFlingActive = st
 end)
 
 OpenBtn.Name = "OpenButton"
@@ -330,7 +335,30 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- 6. INVISIBILIDAD
+-- 6. ANTI-FLING (Protección contra empujones/vuelos maliciosos)
+RunService.Stepped:Connect(function()
+    if antiFlingActive then
+        local character = LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local root = character.HumanoidRootPart
+            if root.AssemblyLinearVelocity.Magnitude > 300 or root.AssemblyAngularVelocity.Magnitude > 300 then
+                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character then
+                    for _, part in pairs(plr.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 7. INVISIBILIDAD
 task.spawn(function()
     while true do
         if invisibleActive then
@@ -351,7 +379,7 @@ task.spawn(function()
     end
 end)
 
--- 7. ESP CON ROLES POR COLOR
+-- 8. ESP CON ROLES POR COLOR
 task.spawn(function()
     while true do
         if espActive then
@@ -388,7 +416,7 @@ task.spawn(function()
     end
 end)
 
--- 8. OBTENER MURDERER
+-- 9. OBTENER MURDERER
 local function getMurderer()
     for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -400,7 +428,7 @@ local function getMurderer()
     return nil
 end
 
--- 9. AUTO-LOCK & AUTO-SHOOT
+-- 10. AUTO-LOCK & AUTO-SHOOT
 RunService.RenderStepped:Connect(function()
     if autoLockActive then
         local murderRoot = getMurderer()
@@ -415,104 +443,4 @@ task.spawn(function()
         if autoShootActive then
             pcall(function()
                 local char = LocalPlayer.Character
-                local gun = char and (char:FindFirstChild("Gun") or LocalPlayer.Backpack:FindFirstChild("Gun"))
-                local murderRoot = getMurderer()
-                
-                if gun and murderRoot then
-                    if gun.Parent == LocalPlayer.Backpack then
-                        gun.Parent = char
-                    end
-                    gun:Activate()
-                end
-            end)
-        end
-        task.wait(0.5)
-    end
-end)
-
--- 10. AUTO-FARM CON MANIQUÍ FALSO (FAKE BODY METHOD)
-local function createFakeBody(char)
-    if fakeCharacter then fakeCharacter:Destroy() end
-    char.Archivable = true
-    fakeCharacter = char:Clone()
-    fakeCharacter.Name = "FakeMannequin"
-    fakeCharacter.Parent = Workspace
-    
-    for _, part in pairs(fakeCharacter:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Anchored = true
-            part.CanCollide = false
-        end
-    end
-end
-
-local function getCoins()
-    local coins = {}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj.Name == "CoinServer" or obj.Name == "CoinContainer" or obj.Name == "Coin" or obj.Name == "CoinVisual" then
-            if obj:IsA("BasePart") and obj.Transparency < 1 then
-                table.insert(coins, obj)
-            elseif obj:IsA("Model") or obj:IsA("Folder") then
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("BasePart") and child.Transparency < 1 then
-                        table.insert(coins, child)
-                    end
-                end
-            end
-        end
-    end
-    return coins
-end
-
-task.spawn(function()
-    while true do
-        if autoFarmActive then
-            local character = LocalPlayer.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = character.HumanoidRootPart
-                
-                -- Crear el maniquí falso en tu posición inicial
-                if not fakeCharacter then
-                    createFakeBody(character)
-                end
-
-                local coins = getCoins()
-                if #coins > 0 then
-                    for i = 1, #coins do
-                        if not autoFarmActive then break end
-                        local coin = coins[i]
-                        if coin and coin.Parent then
-                            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                            
-                            -- Desplazamiento más lento y seguro bajo el mapa
-                            local targetCFrame = coin.CFrame + undergroundOffset
-                            local distance = (rootPart.Position - targetCFrame.Position).Magnitude
-                            local travelTime = math.clamp(distance / farmSpeed, 0.2, 0.8)
-                            
-                            local tweenInfo = TweenInfo.new(travelTime, Enum.EasingStyle.Linear)
-                            local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})
-                            tween:Play()
-                            tween.Completed:Wait()
-
-                            pcall(function()
-                                if firetouchinterest then
-                                    firetouchinterest(rootPart, coin, 0)
-                                    task.wait(0.05)
-                                    firetouchinterest(rootPart, coin, 1)
-                                end
-                            end)
-                            task.wait(0.1)
-                        end
-                    end
-                end
-            end
-        else
-            -- Eliminar maniquí cuando se apaga el farm
-            if fakeCharacter then
-                fakeCharacter:Destroy()
-                fakeCharacter = nil
-            end
-        end
-        task.wait(0.5)
-    end
-end)
+                local gun = char and (char:FindFirstChild("Gun") or LocalPlayer.Back
